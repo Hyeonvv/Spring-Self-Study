@@ -4,8 +4,11 @@ import hello.hellospring.domain.Member;
 import hello.hellospring.service.MemberService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+
+import java.util.List;
 
 @Controller // @Controller 어노테이션이 있으면 스프링 컨테이너에서 스프링 Bean이 관리된다.
 public class MemberController {
@@ -41,5 +44,13 @@ public class MemberController {
         memberService.join(member);
 
         return "redirect:/"; // 회원가입이 끝났으니 홈 화면으로 redirect(이동)
+    }
+
+    @GetMapping("/members")
+    public String list(Model model) {
+        List<Member> members = memberService.findMembers();
+        model.addAttribute("members", members);
+
+        return "members/memberList";
     }
 }
