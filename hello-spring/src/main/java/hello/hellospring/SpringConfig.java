@@ -12,15 +12,23 @@ import javax.sql.DataSource;
 @Configuration
 public class SpringConfig {
 
-    private EntityManager em;
-
-//    private DataSource datadSource;
+    private final MemberRepository memberRepository;
 
     @Autowired
-    public SpringConfig(EntityManager em) {
-        this.em = em;
+    public SpringConfig(MemberRepository memberRepository) {
+        this.memberRepository = memberRepository;
     }
 
+    //    private EntityManager em;
+//
+//    @Autowired
+//    public SpringConfig(EntityManager em) {
+//        this.em = em;
+//    }
+
+
+//    private DataSource datadSource;
+//
 //    @Autowired
 //    public SpringConfig(DataSource dataSource) {
 //        this.dataSource = dataSource;
@@ -28,16 +36,14 @@ public class SpringConfig {
 
     @Bean // Spring 이 실행될 때 @Configuration 을 읽고 이걸 등록하란 뜻이네? 하고 이 로직을 호출해서 Spring Bean 에 등록해준다.
     public MemberService memberService() {
-        return new MemberService(memberRepository());
+        return new MemberService(memberRepository);
     }
 
-    @Bean
-    public MemberRepository memberRepository() {
+//    @Bean
+//    public MemberRepository memberRepository() {
 //        return new MemoryMemberRepository();
 //        return new JdbcMemberRepository(dataSource);
 //        return new JdbcTemplateMemberRepository((dataSource));
-        return new JpaMemberRepository(em);
-    }
-
-
+//        return new JpaMemberRepository(em);
+//    }
 }
