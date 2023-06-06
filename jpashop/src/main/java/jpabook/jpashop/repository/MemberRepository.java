@@ -1,6 +1,8 @@
 package jpabook.jpashop.repository;
 
 import jpabook.jpashop.domain.Member;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
@@ -10,9 +12,12 @@ import javax.persistence.PersistenceUnit;
 import java.util.List;
 
 @Repository // 스프링 빈으로 등록, JPA 예외를 스프링 기반 예외로 예외 변환
+@RequiredArgsConstructor
 public class MemberRepository {
 
-    @PersistenceContext // 스프링이 EntityManager 를 만들어서 Injection(주입) 해준다.
+//    @PersistenceContext // 스프링이 EntityManager 를 만들어서 Injection(주입) 해준다.
+//    @Autowired // 스프링부트가 PersistenceContext 대신 Autowired 도 인식
+    // RequiredArgsConstructor 사용 시 생성자, @Autowired 둘다 필요 x -> 최종, 제일 간편
     private EntityManager em;
 
     public void save(Member member) {
