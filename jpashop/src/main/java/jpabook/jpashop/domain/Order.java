@@ -28,7 +28,7 @@ public class Order {
 
     // 1:1 관계 설정 시 외래키는 두고 싶은 곳에 둬도 된다. 보통 Access 를 많이 하는 곳에 설정한다.
     // Delivery 보다는 접근이 많을 것 같은 Order 쪽에 외래키를 설정하기로 했다.
-    // cascadeType.ALL -> 원래는 delivery, Order 둘 다 persist 해 줘야 하는데, delivery 값만 세팅하고 Order만 persist 해 줘도 둘 다 persist 가 된다.
+    // cascadeType.ALL -> 원래는 delivery, Order 둘 다 persist 해 줘야 하는데, delivery 값을 세팅하고 Order만 persist 해 줘도 둘 다 persist 가 된다.
     @OneToOne(fetch = LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "delivery_id")
     private Delivery delivery;
