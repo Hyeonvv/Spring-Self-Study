@@ -18,7 +18,7 @@ public class MemberRepository {
 //    @PersistenceContext // 스프링이 EntityManager 를 만들어서 Injection(주입) 해준다.
 //    @Autowired // 스프링부트가 PersistenceContext 대신 Autowired 도 인식
     // RequiredArgsConstructor 사용 시 생성자, @Autowired 둘다 필요 x -> 최종, 제일 간편
-    private EntityManager em;
+    private final EntityManager em;
 
     public void save(Member member) {
         em.persist(member); // persist -> 영속성 context 에 멤버 객체 넣고, Transaction 커밋 시점에 DB에 반영(insert)
