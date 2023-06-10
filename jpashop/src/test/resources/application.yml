@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:test
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create # create: 실행 시점에 테이블 drop 후 새로 생성, update: 업데이트
+    properties:
+      hibernate:
+#          show_sql: true # System.out 에 hibernate 실행 SQL 을 남긴다. 현재는 logger 를 통해 사용하려고 주석 처리 하였음.
+        format_sql: true
+
+logging:
+  level:
+    org.hibernate.SQL: debug # logger 를 통해 hibernate 실행 SQL 을 남긴다.
+
+# > 실제 환경과 테스트 환경의 분리
+# test 폴더에서도 resources 폴더를 만든 후 application.yml 파일을 만들어주면 main 에 있는 application.yml 이 아닌
+# test 폴더에 있는 resources 의 application.yml 환경으로 테스트를 진행하게 된다.
+# datasource 의 url 을 변경하여 실제 디비가 아닌 인메모리 구조의 DB로 동작을 하게끔 할 수 있다.
+
+# * spring: 하위 항목들을 전부 주석처리를 해도 스프링이 알아서 메모리 모드로 돌린다.
+# -> 이때는 jpa:hibernate:ddl-auto: 설정은 create-drop 으로 설정된다.
+# create-drop : (drop 후 create(여기까지가 기본 create의 동작)) 후 drop -> 완전히 깨끗하게 자원을 초기화하고 종료
