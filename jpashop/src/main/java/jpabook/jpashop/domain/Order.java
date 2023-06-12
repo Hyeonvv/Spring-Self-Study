@@ -1,6 +1,8 @@
 package jpabook.jpashop.domain;
 
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.aspectj.weaver.ast.Or;
 
@@ -14,6 +16,7 @@ import static javax.persistence.FetchType.*;
 @Entity
 @Table(name = "orders") // 테이블 명 order 로 변경, 예약어 때문에 관례상 orders 를 많이 사용한다.
 @Getter @Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Order {
 
     @Id @GeneratedValue
@@ -29,7 +32,7 @@ public class Order {
 
     // 1:1 관계 설정 시 외래키는 두고 싶은 곳에 둬도 된다. 보통 Access 를 많이 하는 곳에 설정한다.
     // Delivery 보다는 접근이 많을 것 같은 Order 쪽에 외래키를 설정하기로 했다.
-    // cascadeType.ALL -> 원래는 delivery, Order 둘 다 persist 해 줘야 하는데, delivery 값을 세팅하고 Order만 persist 해 줘도 둘 다 persist 가 된다.
+    // cascadeType.ALL -> 원래는 delivery, Order 둘 다 save(persist) 해 줘야 하는데, delivery 값을 세팅하고 Order만 persist 해 줘도 둘 다 save(persist) 가 된다.
     @OneToOne(fetch = LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "delivery_id")
     private Delivery delivery;
@@ -80,7 +83,7 @@ public class Order {
      * 주문 취소
      */
     public void cancel() {
-        if (delivery.getStatus() == DeliveryStatus.COMP) {
+        if (delivery.getStatus() == DeliveryStatus.COMP) { // 배송이 이미 완료된 상품인지 확인
             throw new IllegalStateException("이미 배송 완료된 상품은 취소가 불가능합니다.");
         }
 
