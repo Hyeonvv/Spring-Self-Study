@@ -1,5 +1,6 @@
 package jpabook.jpashop.service;
 
+import jpabook.jpashop.domain.item.Book;
 import jpabook.jpashop.domain.item.Item;
 import jpabook.jpashop.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,18 @@ public class ItemService {
     @Transactional // readOnly = false 처리 (조회작업이 아니기 떄문)
     public void saveItem(Item item) {
         itemRepository.save(item);
+    }
+    
+    @Transactional
+    public void updateItem(Long itemId, String name, int price, int stockQuantity) {
+        // 아래의 findItem 은 영속상태
+        Item findItem = itemRepository.findOne(itemId);
+
+        // 원래는 이러한 변경 로직들도 set 이 아닌 메서드를 통해서 구현하는 것이 좋다.
+        // ex) findItem.change(price, name, stockQuantity);
+        findItem.setName(name);
+        findItem.setPrice(price);
+        findItem.setStockQuantity(stockQuantity);
     }
 
     public List<Item> findItems() {
