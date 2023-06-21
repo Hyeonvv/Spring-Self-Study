@@ -15,6 +15,7 @@ import javax.persistence.EntityManager;
 import javax.swing.text.html.parser.Entity;
 
 import static org.assertj.core.api.Assertions.*;
+import static study.querydsl.entity.QMember.*;
 
 @SpringBootTest
 @Transactional
@@ -28,6 +29,9 @@ public class QuerydslBasicTest {
 
     @BeforeEach
     public void before() {
+        // JPAQueryFactory 를 만들 때 entityManager 를 넘겨줘야 JPAQueryFactor 가 entityManager 를 이용해서 데이터를 찾아올 수 있다.
+        queryFactory = new JPAQueryFactory(em);
+
         Team teamA = new Team("teamA");
         Team teamB = new Team("teamB");
 
@@ -76,17 +80,46 @@ public class QuerydslBasicTest {
     public void startQuerydsl() {
         // member1을 찾아라
 
-        // JPAQueryFactory 를 만들 때 entityManager 를 넘겨줘야 JPAQueryFactor 가 entityManager 를 이용해서 데이터를 찾아올 수 있다.
-        queryFactory = new JPAQueryFactory(em);
-        // "m" -> 어떤 QMember 인지를 구분하는 용도 (크게 중요하지는 않다, 어차피 쓰지 않는다)
-        QMember m = new QMember("m");
+        // new QMember("m") 의 "m" -> 어떤 QMember 인지를 구분하는 용도 (크게 중요하지는 않다, 어차피 쓰지 않는다)
+        // 방법 1
+//        QMember m = new QMember("m");
+        // 방법 2 (QMember 내에 작성되어 있는 static 생성자 이용)
+//        QMember m = Qmember.member;
+        // 방법 3 (권장 방법)
+        // static import
 
         Member findMember = queryFactory
-                .select(m)
-                .from(m)
-                .where(m.username.eq("member1")) // parameter 바인딩 없이도 이렇게 구현이 가능하다.
+                .select(member)
+                .from(member)
+                .where(member.username.eq("member1")) // parameter 바인딩 없이도 이렇게 구현이 가능하다.
+                .fetchOne(); // 결과값을 하나만 가져올 때 사용, 쿼리의 결과가 없을 땐 null 반환, 두개 이상의 결과가 있을 경우 NonUniqueResultException 발생
+
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
+    @Test
+    public void search() {
+        Member findMember = queryFactory
+                .selectFrom(member) // select(member) + from(member) 을 합칠 수 있다.
+                .where(member.username.eq("member1")
+                        .and(member.age.eq(10))) // and 나 or 로 조건을 걸 수 있다.
                 .fetchOne();
 
         assertThat(findMember.getUsername()).isEqualTo("member1");
+        assertThat(findMember.getAge()).isEqualTo(10);
+    }
+
+    @Test
+    public void searchAndParam() {
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(
+                        member.username.eq("member1"), // 쉼표를 통해 and 와 같은 효과를 낼 수 있다.
+                        member.age.eq(10)
+                )
+                .fetchOne();
+
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+        assertThat(findMember.getAge()).isEqualTo(10);
     }
 }
