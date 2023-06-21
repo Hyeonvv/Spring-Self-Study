@@ -1,5 +1,6 @@
 package study.querydsl;
 
+import com.querydsl.core.QueryResults;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,8 @@ import study.querydsl.entity.Team;
 
 import javax.persistence.EntityManager;
 import javax.swing.text.html.parser.Entity;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static study.querydsl.entity.QMember.*;
@@ -121,5 +124,40 @@ public class QuerydslBasicTest {
 
         assertThat(findMember.getUsername()).isEqualTo("member1");
         assertThat(findMember.getAge()).isEqualTo(10);
+    }
+
+    @Test
+    public void resultFetch() {
+        // 리스트 조회
+        List<Member> fetch = queryFactory
+                .selectFrom(member)
+                .fetch();
+
+        // 단건 조회
+        Member fetchOne = queryFactory
+                .selectFrom(member)
+                .fetchOne();
+
+        // limit(1).fetchOne() 과 같은 기능
+        // 쿼리 결과의 첫번째 레코드만 반환한다.
+        Member fetchFirst = queryFactory
+                .selectFrom(member)
+                .fetchFirst();
+
+        // 페이징에서 사용
+        // fetchResults() -> 두번의 쿼리가 실행된다.
+        // 1. 전체 결과 수를 가져오는 카운트 쿼리 -> getTotal() 을 통해 확인 가능
+        // 2. 실제 데이터를 가져오는 쿼리 -> getResults() 을 통해 확인 가능
+        QueryResults<Member> results = queryFactory
+                .selectFrom(member)
+                .fetchResults();
+
+        results.getTotal();
+        List<Member> content = results.getResults();
+
+        // Count 만 뽑아오는 기능
+        long total = queryFactory
+                .selectFrom(member)
+                .fetchCount();
     }
 }
