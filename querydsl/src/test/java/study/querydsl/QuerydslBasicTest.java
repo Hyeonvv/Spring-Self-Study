@@ -173,20 +173,52 @@ public class QuerydslBasicTest {
         em.persist(new Member("member5", 100));
         em.persist(new Member("member6", 100));
 
+        // nullsLast(), nullsFirst(): 해당 필드의 값이 null 인 행이 있을 경우 어디에 위치시킬지 지정
+        // nullsLast(): 제일 마지막에 위치시킨다.
+        // nullsFirst(): 제일 처음에 위치시킨다.
         List<Member> result = queryFactory
                 .selectFrom(member)
                 .where(member.age.eq(100))
-                .orderBy(member.age.desc(), member.username.asc().nullsLast()) // nullsLast(), nullsFirst(): null 데이터 순서 부여
+                .orderBy(member.age.desc(), member.username.asc().nullsLast())
                 .fetch();
 
-        Member member5 = result.get(0);
-        Member member6 = result.get(1);
-        Member memberNull = result.get(2);
+        Member member5 = result.get(0); // username 오름차순 정렬이기 때문에 member5 먼저,
+        Member member6 = result.get(1); // 그리고 member6 순서로 나온다.
+        Member memberNull = result.get(2); // nullsLast() 때문에 마지막에 위치
 
         assertThat(member5.getUsername()).isEqualTo("member5");
         assertThat(member6.getUsername()).isEqualTo("member6");
         assertThat(memberNull.getUsername()).isEqualTo(null);
+    }
 
+    @Test
+    public void paging1() {
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1) // 시작 지점: 1개 건너뛴 first index 부터.  * offset(0): zero index 부터(처음부터)
+                .limit(2) // 페이지 사이즈: 최대 2건 조회
+                .fetch();
+
+        assertThat(result.size()).isEqualTo(2);
+    }
+
+    @Test
+    public void paging2() {
+        QueryResults<Member> queryResults = queryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1) // 0 부터 시작(zero index부터)
+                .limit(2) // 최대 2건 조회
+                .fetchResults();
+
+        // getTotal() 메소드는 쿼리 결과의 총 항목 수를 반환한다.
+        // 이는 offset 이나 limit 설정과 무관하게, 주어진 쿼리에 대해 일치하는 전체 결과의 수를 나타낸다.
+        // selectFrom(member).orderBy(member.username.desc()) 조건에 해당하는 전체 회원 수가 4명
+        assertThat(queryResults.getTotal()).isEqualTo(4);
+        assertThat(queryResults.getLimit()).isEqualTo(2); // getLimit(): 쿼리 결과의 최대 개수
+        assertThat(queryResults.getOffset()).isEqualTo(1); // getOffset(): 몇번째 index 부터 데이터를 가져오는지
+        assertThat(queryResults.getResults().size()).isEqualTo(2); // 뽑아온 데이터의 size(개수)
 
     }
 }
