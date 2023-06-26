@@ -289,6 +289,49 @@ public class QuerydslBasicTest {
 
         assertThat(teamB.get(team.name)).isEqualTo("teamB");
         assertThat(teamB.get(member.age.avg())).isEqualTo(35); // (30 + 40) / 2
+    }
+
+    /**
+     * 팀 A 에 소속된 모든 회원
+     * f
+     */
+    @Test
+    public void join() throws Exception {
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .join(member.team, team) // team -> Qteam.team 을 얘기한다.
+                .where(team.name.eq("teamA")) // team 이름이 teamA 인 것들
+                .fetch();
+
+        assertThat(result)
+                .extracting("username") // result 리스트의 각 Member 객체에서 username 필드 추출
+                .containsExactly("member1", "member2"); // 추출된 사용자 이름이 member1과 member2 를 포함하는지 확인
+    }
+
+    /**
+     * 세타 조인(연관관계가 없는 필드로 조인)(카테시안 곱)
+     * 회원의 이름이 팀 이름과 같은 회원 조회
+     * from 절에 여러 엔티티 선택해서 세타 조인 -> 모든 회원과 모든 팀을 가져온 다음 다 조인한 후 where 절에서 필터링
+     * DB 가 알아서 성능 최적화 작업을 해준다.
+     * > 외부 조인은 불가능하지만(left join, right join ...) 할 수 있는 방법이 따로 있다고 한다.
+     */
+    @Test
+    public void theta_join() {
+        em.persist(new Member("teamA"));
+        em.persist(new Member("teamB"));
+        em.persist(new Member("teamC"));
+
+        List<Member> result = queryFactory
+                .select(member)
+                .from(member, team)
+                .where(member.username.eq(team.name))
+                .fetch();
+
+        assertThat(result)
+                .extracting("username")
+                .containsExactly("teamA", "teamB");
+
 
     }
+
 }
