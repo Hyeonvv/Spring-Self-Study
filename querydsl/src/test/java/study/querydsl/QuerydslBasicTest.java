@@ -330,8 +330,52 @@ public class QuerydslBasicTest {
         assertThat(result)
                 .extracting("username")
                 .containsExactly("teamA", "teamB");
-
-
     }
 
+    /**
+     * 회원과 팀을 조인하면서, 팀 이름이 teamA 인 팀만 조인, 회원은 모두 조회
+     * JPQL: select m, t from Member m left join m.team t on t.name = 'teamA'
+     * -> 멤버는 전부 조회해오고, 팀은 teamA에 해당하는 팀만 조회된다. teamA가 아닌 멤버들의 팀 반환값은 null.
+     * 내부조인(inner join) 의 경우에는 where 절을 넣는거랑 기능이 동일하다. -> 내부조인 때는 where 절로 해결하는 것이 좋다.
+     */
+    @Test
+    public void join_on_filtering() {
+        List<Tuple> result = queryFactory
+                .select(member, team) // select 절이 여러 가지 타입이기 때문에 반환값은 Tuple 로 나온다.
+                .from(member)
+                .leftJoin(member.team, team)
+//                .innerJoin(memberr.team, team)
+                .on(team.name.eq("teamA"))
+//                .where(team.name.eq("teamA"))
+                .fetch();
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+    }
+
+    /**
+     * 연관관계 없는 엔티티 외부 조인
+     * 회원의 이름이 팀 이름과 같은 대상 외부 조인
+     * 기존의 일반 조인과 문법이 조금 다르다.
+     * 일반 조인: leftJoin(member.team, team)
+     * on 조인: leftJoin(team)
+     */
+    @Test
+    public void join_on_no_relation() {
+        em.persist(new Member("teamA"));
+        em.persist(new Member("teamB"));
+        em.persist(new Member("teamC"));
+
+        List<Tuple> result = queryFactory
+                .select(member, team)
+                .from(member)
+                .leftJoin(team)
+                .on(member.username.eq(team.name))
+                .fetch();
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+    }
 }
