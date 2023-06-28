@@ -2,6 +2,7 @@ package study.querydsl;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,9 +22,10 @@ import javax.swing.text.html.parser.Entity;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.*;
-import static study.querydsl.entity.QMember.*;
-import static study.querydsl.entity.QTeam.*;
+import static com.querydsl.jpa.JPAExpressions.*; // SubQuery
+import static org.assertj.core.api.Assertions.*; // Junit Test
+import static study.querydsl.entity.QMember.*; // QMember
+import static study.querydsl.entity.QTeam.*; // QTeam
 
 @SpringBootTest
 @Transactional
@@ -412,4 +414,110 @@ public class QuerydslBasicTest {
         boolean loaded = emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam());// 로딩된 엔티티인지 아닌지 알려준다.
         assertThat(loaded).as("페치 조인 미적용").isTrue();
     }
+
+    /**
+     * 나이가 가장 많은 회원 조회
+     */
+    @Test
+    public void subQuery() throws Exception {
+
+        // 서브쿼리는 alias 가 달라야 하기 때문에 새로운 QMember 생성
+        QMember memberSub = new QMember("memberSub");
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .where(member.age.eq(
+                        select(memberSub.age.max())
+                                .from(memberSub)
+                ))
+                .fetch();
+
+        assertThat(result).extracting("age")
+                .containsExactly(40);
+    }
+
+    /**
+     * 나이가 평균 이상인 회원
+     * goe(>=): greater or equal
+     */
+    @Test
+    public void subQueryGoe() throws Exception {
+
+        // 서브쿼리는 alias 가 달라야 하기 때문에 새로운 QMember 생성
+        QMember memberSub = new QMember("memberSub");
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .where(member.age.goe( // >=
+                        select(memberSub.age.avg())
+                                .from(memberSub)
+                ))
+                .fetch();
+
+        assertThat(result).extracting("age")
+                .containsExactly(30, 40);
+    }
+
+    /**
+     * 멤버 중 (멤버 나이가 10 보다 많은 멤버) 에 속하는 인원 조회
+     * in
+     * gt(>): greater than
+     */
+    @Test
+    public void subQueryIn() throws Exception {
+
+        // 서브쿼리는 alias 가 달라야 하기 때문에 새로운 QMember 생성
+        QMember memberSub = new QMember("memberSub");
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .where(member.age.in(
+                        select(memberSub.age)
+                                .from(memberSub)
+                                .where(memberSub.age.gt(10))
+                ))
+                .fetch();
+
+        assertThat(result).extracting("age")
+                .containsExactly(20, 30, 40);
+    }
+
+    /**
+     * select 절에서의 서브쿼리 사용 예제
+     * 멤버 이름 | 전체 멤버들의 평균 나이
+     * member1 | 25
+     * member2 | 25
+     * member3 | 25
+     * member4 | 25
+     */
+    @Test
+    public void selectSubQuery() throws Exception {
+
+        QMember memberSub = new QMember("memberSub");
+
+        List<Tuple> result = queryFactory
+                .select(member.username,
+                        select(memberSub.age.avg())
+                                .from(memberSub))
+                .from(member)
+                .fetch();
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+    }
+
+    /**
+     * > JPA JPQL 서브쿼리의 한계
+     * from 절의 서브쿼리는 지원하지 않는다.
+     * 당연히 QueryDsl 또한 from 절의 서브쿼리를 지원하지 않는다.
+     * (QueryDsl 은 JPQL 빌더 역할을 하는 것이기 떄문에 JPQL 에서 안되면 QueryDsl 에서도 불가능하다.)
+     * JPA 표준 스펙에서는 select 절에서도 서브쿼리를 지원하지 않지만, Hibernate 구현체를 사용하면 select 절에서는 사용이 가능하다.
+     *
+     *
+     * > from 절의 서브쿼리 해결 방안 (Hibernate 나중 버전에서 해결이 될 수도 있다고 한다.)
+     * 1. 서브쿼리를 join 으로 변경한다. (가능한 상황도 있고, 불가능한 상황도 있다.)
+     * 2. 애플리케이션에서 쿼리를 2번 분리해서 실행한다. (엄청 긴 양의 한줄의 쿼리보다 두 개로 나누는 것이 더 나을수도 있다.)
+     * 3. nativeSQL 을 사용한다.
+     */
 }
