@@ -3,6 +3,7 @@ package study.querydsl;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -583,6 +584,39 @@ public class QuerydslBasicTest {
 //            Integer rank = tuple.get(rankPath);
 //            System.out.println("username = " + username + " age = " + age + " rank = " + rank);
             System.out.println("tuple = " + tuple);
+        }
+    }
+
+    /**
+     * 조회 목록에 상수가 필요하면 Expressions.constant() 를 사용할 수 있다.
+     * JPQL 에서는 표시되지 않는다.
+     */
+    @Test
+    public void constant() throws Exception {
+        List<Tuple> result = queryFactory
+                .select(member.username, Expressions.constant("A"))
+                .from(member)
+                .fetch();
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+    }
+
+    @Test
+    public void concat() throws Exception {
+
+        // {username}_{age} 처럼 표현하고 싶을 때
+        // 같은 타입이 아니면 concat 이 되지 않기 때문에 member.age.stringValue() 처럼 작성
+        // * stringValue() 는 실무에서 사용할 일이 많다.(ENUM 을 사용할 때 자주 사용)
+        List<String> result = queryFactory
+                .select(member.username.concat("_").concat(member.age.stringValue()))
+                .from(member)
+                .where(member.username.eq("member1"))
+                .fetch();
+
+        for (String s : result) {
+            System.out.println("s = " + s);
         }
     }
 }
