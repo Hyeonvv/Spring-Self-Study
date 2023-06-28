@@ -2,6 +2,8 @@ package study.querydsl;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.assertj.core.api.Assertions;
@@ -513,11 +515,74 @@ public class QuerydslBasicTest {
      * 당연히 QueryDsl 또한 from 절의 서브쿼리를 지원하지 않는다.
      * (QueryDsl 은 JPQL 빌더 역할을 하는 것이기 떄문에 JPQL 에서 안되면 QueryDsl 에서도 불가능하다.)
      * JPA 표준 스펙에서는 select 절에서도 서브쿼리를 지원하지 않지만, Hibernate 구현체를 사용하면 select 절에서는 사용이 가능하다.
-     *
-     *
+     * <p>
+     * <p>
      * > from 절의 서브쿼리 해결 방안 (Hibernate 나중 버전에서 해결이 될 수도 있다고 한다.)
      * 1. 서브쿼리를 join 으로 변경한다. (가능한 상황도 있고, 불가능한 상황도 있다.)
      * 2. 애플리케이션에서 쿼리를 2번 분리해서 실행한다. (엄청 긴 양의 한줄의 쿼리보다 두 개로 나누는 것이 더 나을수도 있다.)
      * 3. nativeSQL 을 사용한다.
      */
+
+    @Test
+    public void basicCase() throws Exception {
+
+        List<String> result = queryFactory
+                .select(member.age
+                        .when(10).then("열살")
+                        .when(20).then("스무살")
+                        .otherwise("기타")) // else
+                .from(member)
+                .fetch();
+
+        for (String s : result) {
+            System.out.println("s = " + s);
+        }
+    }
+
+    @Test
+    public void complexCase() throws Exception {
+
+        List<String> result = queryFactory
+                .select(new CaseBuilder()
+                        .when(member.age.between(0, 20)).then("0 ~ 20 살")
+                        .when(member.age.between(21, 30)).then("21 ~ 30 살")
+                        .otherwise("기타"))
+                .from(member)
+                .fetch();
+
+        for (String s : result) {
+            System.out.println("s = " + s);
+        }
+    }
+
+    /**
+     * 임의의 순서로 회원을 출력하고 싶다면? 
+     * 0 ~ 30 살이 아닌 회원을 가장 먼저 출력
+     * 0 ~ 20 살 회원 출력
+     * 21 ~ 30 살 회원 출력
+     *
+     * rankPath 에서 case 문을 통해 순서 설정한 뒤 orderBy 이용하여 내림차순 나열
+     */
+    @Test
+    public void orderByWithCase() throws Exception {
+
+        NumberExpression<Integer> rankPath = new CaseBuilder()
+                .when(member.age.between(0, 20)).then(2)
+                .when(member.age.between(21, 30)).then(1)
+                .otherwise(3);
+
+        List<Tuple> result = queryFactory
+                .select(member.username, member.age, rankPath)
+                .from(member)
+                .orderBy(rankPath.desc()) // 내림차순 나열
+                .fetch();
+
+        for (Tuple tuple : result) {
+//            String username = tuple.get(member.username);
+//            Integer age = tuple.get(member.age);
+//            Integer rank = tuple.get(rankPath);
+//            System.out.println("username = " + username + " age = " + age + " rank = " + rank);
+            System.out.println("tuple = " + tuple);
+        }
+    }
 }
