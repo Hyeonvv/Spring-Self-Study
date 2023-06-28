@@ -619,4 +619,43 @@ public class QuerydslBasicTest {
             System.out.println("s = " + s);
         }
     }
+
+    /**
+     * 프로젝션 : select 절에 뭘 가져올 지 대상을 지정하는 것
+     * 프로젝션 대상이 하나면 반환 타입을 명확하게 지정할 수 있다.
+     * 프로젝션 대상이 둘 이상이면 Tuple 이나 DTO 로 조회한다.
+     */
+    @Test
+    public void simpleProjection() throws Exception {
+        List<String> result = queryFactory
+                .select(member.username)
+                .from(member)
+                .fetch();
+
+        for (String s : result) {
+            System.out.println("s = " + s);
+        }
+    }
+
+    /**
+     * Tuple 은 실무에서 Repository 계층 안에서만 사용하고 반환할 때는 DTO 로 바꿔서 반환하는 것이 좋다.
+     * -> Tuple 은 QueryDsl 에 종속적인 기능이기 때문에 의존성을 최소화하는 것이 좋다.
+     * -> 나중에 만약 QueryDsl 에서 다른 기술로 바꾸더라도 Repository 쪽만 수정하면 되기 때문이다. (Controller, Service 등 건드릴 필요가 없음.)
+     *
+     */
+    @Test
+    public void tupleProjection() throws Exception {
+        List<Tuple> result = queryFactory
+                .select(member.username, member.age)
+                .from(member)
+                .fetch();
+
+        for (Tuple tuple : result) {
+            String username = tuple.get(member.username);
+            Integer age = tuple.get(member.age);
+
+            System.out.println("username = " + username);
+            System.out.println("age = " + age);
+        }
+    }
 }
