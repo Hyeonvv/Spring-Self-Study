@@ -14,10 +14,12 @@ import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.apache.el.parser.BooleanNode;
 import org.assertj.core.api.Assertions;
+import org.hibernate.metamodel.model.domain.internal.MapMember;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.dto.MemberDto;
 import study.querydsl.dto.QMemberDto;
@@ -866,6 +868,76 @@ public class QuerydslBasicTest {
      */
     private BooleanExpression allEq(String usernameCond, Integer ageCond) {
         return usernameEq(usernameCond).and(ageEq(ageCond));
+    }
+
+    /**
+     * 쿼리 한번으로 대량의 데이터 수정 (벌크 연산)
+     *
+     * 벌크 연산의 주의점
+     * JPA 를 사용하면 엔티티들이 영속성 컨텍스트에 올라가있는 상태인데,
+     * 벌크 연산은 영속성 컨텍스트를 무시하고 DB 에 바로 쿼리가 나간다.
+     * -> DB 의 상태와 영속성 컨텍스트의 상태가 달라져 버리게 된다.
+     */
+    @Test
+    public void bulkUpdate() throws Exception {
+
+        // member1 = 10 -> DB - member1
+        // member2 = 20 -> DB - member2
+        // member3 = 30 -> DB - member3
+        // member4 = 40 -> DB - member4
+
+        // count 에는 결과 row 수 반환
+        long count = queryFactory
+                .update(member)
+                .set(member.username, "비회원")
+                .where(member.age.lt(28))
+                .execute();
+
+        /**
+         * 해결방법
+         */
+        em.flush(); // 영속성 컨텍스트의 데이터들을 flush 를 통해 보내서 DB 와 데이터를 맞추고,
+        em.clear(); // 초기화한다.
+
+        // 실행 후 상태가 안 맞는 경우 발생
+        // member1 = 10 -> DB - 비회원         영속성 컨텍스트 - member1
+        // member2 = 20 -> DB - 비회원         영속성 컨텍스트 - member2
+        // member3 = 30 -> DB - member3(유지) 영속성 컨텍스트 - member3
+        // member4 = 40 -> DB - member4(유지) 영속성 컨텍스트 - member4
+
+        /*
+        그 상태에서 조회를 했을 시
+        JPA는 기본적으로 DB 에서 가져온 데이터를 영속성 컨텍스트에 다시 넣어줘야 하는데,
+        이미 영속성 컨텍스트에 존재하고 있기 때문에 DB 에서 조회해온 결과를 버려버린다.
+        -> 결국 영속성 컨텍스트의 데이터가 유지되게 된다. 영속성 컨텍스트가 항상 우선권을 가짐.
+        */
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .fetch();
+
+        for (Member member1 : result) {
+            System.out.println("member1 = " + member1);
+        }
+    }
+
+    /**
+     * 실무에서 자주 쓰임
+     */
+    @Test
+    public void bulkAdd() throws Exception {
+        long count = queryFactory
+                .update(member)
+                .set(member.age, member.age.add(-1))
+                .execute();
+    }
+
+    @Test
+    public void bulkDelete() throws Exception {
+        long count = queryFactory
+                .delete(member)
+                .where(member.age.gt(18))
+                .execute();
     }
 
 }
