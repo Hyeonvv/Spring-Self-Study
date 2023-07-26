@@ -940,4 +940,42 @@ public class QuerydslBasicTest {
                 .execute();
     }
 
+    /**
+     * {0}, {1}, {2} 가 뜻하는 의미
+     * : 위치 기반의 parameter placeholder
+     * 이것들은 Expressions.stringTemplate 메소드에서 지정한 실제 값들로 대체된다.
+     * {0} : member.username
+     * {1} : member1
+     * {2} : M
+     * -> REPLACE(member.username, 'member', 'M') : member.username 필드에서 'member' 라는 문자열을 찾아 'M' 으로 바꿔라
+     */
+    @Test
+    public void sqlFunction1() throws Exception {
+
+        List<String> result = queryFactory
+                .select(Expressions.stringTemplate(
+                        "function('replace', {0}, {1}, {2})",
+                        member.username, "member", "M")) // username 에서 'member' 라는 단어를 'M' 으로 바꿔서 조회
+                .from(member)
+                .fetch();
+
+        for (String s : result) {
+            System.out.println("s = " + s);
+        }
+    }
+
+    @Test
+    public void sqlFunction2() throws Exception {
+        List<String> result = queryFactory
+                .select(member.username)
+                .from(member)
+//                .where(member.username.eq(
+//                        Expressions.stringTemplate("function('lower', {0})", member.username)))
+                .where(member.username.eq(member.username.lower()))
+                .fetch();
+
+        for (String s : result) {
+            System.out.println("s = " + s);
+        }
+    }
 }
