@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.QMemberDto;
 import study.querydsl.dto.UserDto;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
@@ -753,6 +754,28 @@ public class QuerydslBasicTest {
 
         for (UserDto userDto : result) {
             System.out.println("userDto = " + userDto);
+        }
+    }
+
+    /**
+     * 생성자 + @QueryProjection 활용
+     * @QueryProjection 어노테이션을 달아준 후 compileQuerydsl -> DTO 의 Q 타입이 생성된다.
+     * 컴파일러로 타입 체크할 수 있다.
+     * 다만 DTO 에 QueryDSL 어노테이션을 유지해야 하는 점과 DTO 까지 Q 타입 파일을 생성해야 하는 단점이 있다.
+     * DTO 가 @QueryProjection 주석 때문에 QueryDSL 에 의존하는 상태, 순수하지 않은 상태
+     *
+     * 의존성 없이 순수하게 DTO 를 사용하고 싶은 경우에는 다른 방법을 사용하는 것이 좋고,
+     * 실용적인 관점에서 QueryDSL 을 많이 사용, 의존하고 하부 기술들도 별로 바뀔 것 같지 않은 경우에는 이 방법을 사용하면 좋다.
+     */
+    @Test
+    public void findDtoByQueryProjection() throws Exception {
+        List<MemberDto> result = queryFactory
+                .select(new QMemberDto(member.username, member.age)) // 작성 시점에 타입 체크 가능 -> 가장 안전한 방법
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
         }
     }
 }
