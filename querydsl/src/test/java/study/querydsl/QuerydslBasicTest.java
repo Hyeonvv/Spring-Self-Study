@@ -4,12 +4,15 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import org.apache.el.parser.BooleanNode;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -801,7 +804,7 @@ public class QuerydslBasicTest {
 
         BooleanBuilder builder = new BooleanBuilder(); // 기본 초기 조건을 넣을수도 있다.
 //        BooleanBuilder builder = new BooleanBuilder(member.username.eq(usernameCond)); // 기본 초기 조건을 넣은 경우
-        
+
         if (usernameCond != null) {
             builder.and(member.username.eq(usernameCond));
         }
@@ -818,5 +821,51 @@ public class QuerydslBasicTest {
         return result;
     }
 
+    /**
+     * 동적 쿼리를 해결하는 두 가지 방식
+     * - BooleanBuilder
+     * - Where 다중 파라미터 사용 ✔ (선호하는 방법, 깔끔)
+     *
+     * where 조건에 null 값은 무시된다.
+     * 메서드를 다른 쿼리에서도 재활용 할 수 있다.
+     * 쿼리 자체의 가독성이 높아진다.
+     * 조립(조합)이 가능하다.
+     */
+    @Test
+    public void dynamicQuery_WhereParam() throws Exception {
+        String usernameParam = "member1";
+        Integer ageParam = 10;
+
+        List<Member> result = searchMember2(usernameParam, ageParam);
+        assertThat(result.size()).isEqualTo(1);
+     }
+
+    private List<Member> searchMember2(String usernameCond, Integer ageCond) {
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .where(usernameEq(usernameCond), ageEq(ageCond))
+//                .where(allEq(usernameCond, ageCond))
+                .fetch();
+
+        return result;
+    }
+
+    private BooleanExpression usernameEq(String usernameCond) {
+        return usernameCond != null ? member.username.eq(usernameCond) : null; // null 이 아니면 usernameCond 반환
+    }
+
+    private BooleanExpression ageEq(Integer ageCond) {
+        return ageCond != null ? member.age.eq(ageCond) : null;
+    }
+
+    // 광고 상태 isValid(), 날짜 DateBetween()~, ... 조건 여러 개 조합해서 -> isServiceable()
+
+    /**
+     * 조립해서 한번에 사용할 수도 있다.
+     */
+    private BooleanExpression allEq(String usernameCond, Integer ageCond) {
+        return usernameEq(usernameCond).and(ageEq(ageCond));
+    }
 
 }
